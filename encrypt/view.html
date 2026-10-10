@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encrypted message</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../">← Utilities</a></div>
+  <h1>🔒 Encrypted message</h1>
+  <form class="card" id="form">
+    <label>Password<br><input type="password" id="pw" autocomplete="current-password" autofocus style="width:100%;max-width:320px"></label>
+    <div class="row" style="margin-top:10px"><button class="primary" id="go">Decrypt</button><span id="status" class="muted"></span></div>
+  </form>
+  <div class="card" id="result" hidden>
+    <pre id="text" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font:inherit"></pre>
+    <div class="row" style="margin-top:10px"><button id="copy">Copy</button></div>
+  </div>
+</main>
+<script src="crypto.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+function check() {
+  if (location.hash.length < 2) { $('form').innerHTML = '<p class="muted">No message in this link. <a href="./">Create one</a>.</p>'; }
+}
+$('form').onsubmit = async e => {
+  e.preventDefault();
+  if (!$('pw').value) return;
+  if (!window.crypto?.subtle) { $('status').textContent = 'Decryption needs HTTPS or localhost.'; return; }
+  $('go').disabled = true; $('status').className = 'muted'; $('status').textContent = 'Decrypting…';
+  try {
+    $('text').textContent = await decryptText(location.hash.slice(1), $('pw').value);  // textContent: never interpreted as HTML
+    $('result').hidden = false; $('form').hidden = true;
+  } catch {
+    $('status').className = 'bad'; $('status').textContent = 'Wrong password, or the link is damaged.';
+  }
+  $('go').disabled = false;
+};
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('text').textContent); $('copy').textContent = 'Copied!'; } catch {}
+  setTimeout(() => $('copy').textContent = 'Copy', 1500);
+};
+addEventListener('hashchange', () => location.reload());
+check();
+</script>
+</body>
+</html>

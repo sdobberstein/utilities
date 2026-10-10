@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encrypt message</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../">← Utilities</a></div>
+  <h1>Encrypt a message</h1>
+  <p class="muted">Encrypts in your browser with a password and puts the result in a link. Nothing is sent to or stored on a server. Share the password separately from the link.</p>
+  <div class="card">
+    <label>Message<br><textarea id="msg" rows="8" style="width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px"></textarea></label>
+    <div class="row" style="margin:10px 0">
+      <label>Password<br><input type="password" id="pw" autocomplete="new-password" style="width:100%;max-width:320px"></label>
+    </div>
+    <button class="primary" id="go">Encrypt &amp; generate link</button>
+    <span class="muted" id="status"></span>
+  </div>
+  <div class="card" id="out" hidden>
+    <input type="text" id="link" readonly style="width:100%">
+    <div class="row" style="margin-top:8px">
+      <button id="copy">Copy</button>
+      <a href="#" id="open" target="_blank" rel="noopener">Open →</a>
+      <span class="muted" id="note"></span>
+    </div>
+  </div>
+  <p class="warn">Anyone with the link can try passwords offline, so use a long, unique password. The link is only as private as the password is strong.</p>
+</main>
+<script src="crypto.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+$('go').onclick = async () => {
+  if (!$('msg').value) { $('msg').focus(); return; }
+  if (!$('pw').value) { $('pw').focus(); return; }
+  if (!window.crypto?.subtle) { $('status').textContent = ' Encryption needs HTTPS or localhost.'; return; }
+  $('go').disabled = true; $('status').textContent = ' Encrypting…';
+  try {
+    const url = new URL('view.html', location.href);
+    url.hash = await encryptText($('msg').value, $('pw').value);
+    $('link').value = url.href; $('open').href = url.href;
+    $('note').textContent = url.href.length.toLocaleString() + ' characters' + (url.href.length > 8000 ? ' — long; some apps may truncate it' : '');
+    $('out').hidden = false; $('status').textContent = '';
+  } catch (e) { $('status').textContent = ' Failed: ' + e.message; }
+  $('go').disabled = false;
+};
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('link').value); $('copy').textContent = 'Copied!'; }
+  catch { $('link').select(); }
+  setTimeout(() => $('copy').textContent = 'Copy', 1500);
+};
+</script>
+</body>
+</html>
