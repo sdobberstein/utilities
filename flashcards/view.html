@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcards</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  main { max-width: 640px; }
+  #bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  #fill { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #flash { width: 100%; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+    font-size: clamp(1.3rem, 5vw, 2rem); line-height: 1.35; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere;
+    background: var(--card); border: 2px solid var(--line); border-radius: 14px; cursor: pointer; }
+  #flash:hover { border-color: var(--accent); }
+  #flash.back { border-color: var(--accent); background: var(--chip); }
+  #side { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .acts button { min-height: 56px; font-size: 1.1rem; }
+  .big { font-size: 2.4rem; font-weight: 700; margin: 8px 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="row between noprint">
+    <div class="crumbs"><a href="../">← Utilities</a> · <a href="./" id="edit">Edit a copy</a></div>
+    <span class="muted" id="progress"></span>
+  </div>
+  <h1 id="title">Flashcards</h1>
+
+  <div id="study" hidden>
+    <div id="bar"><div id="fill"></div></div>
+    <button id="flash" type="button" aria-live="polite"><span id="side"></span><span id="text"></span></button>
+    <div class="acts">
+      <button id="again">↺ Again</button>
+      <button class="primary" id="know">✓ Got it</button>
+    </div>
+    <p class="muted" style="text-align:center">Click the card or press <b>Space</b> to flip · <b>←</b> again · <b>→</b> got it</p>
+  </div>
+
+  <div class="card" id="done" hidden style="text-align:center">
+    <div class="big">🎉 Done!</div>
+    <p id="summary" class="muted"></p>
+    <button class="primary" id="restart">Shuffle &amp; study again</button>
+  </div>
+
+  <p class="bad" id="err" hidden></p>
+</main>
+<script src="codec.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let deck, queue, total, flipped, again, reviews;
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function start() {
+  queue = shuffle(deck.cards); total = queue.length; again = 0; reviews = 0;
+  $('done').hidden = true; $('study').hidden = false; show();
+}
+function show() {
+  flipped = false;
+  if (!queue.length) {
+    $('study').hidden = true; $('done').hidden = false; $('progress').textContent = '';
+    $('summary').textContent = total + ' cards · ' + (again ? again + ' marked "Again" along the way' : 'all got right first try');
+    return;
+  }
+  render();
+}
+function render() {
+  const [f, b] = queue[0];
+  $('side').textContent = flipped ? 'Back' : 'Front';
+  $('text').textContent = flipped ? b : f;
+  $('flash').classList.toggle('back', flipped);
+  const left = queue.length;
+  $('progress').textContent = (total - left) + ' / ' + total + ' done';
+  $('fill').style.width = ((total - left) / total * 100) + '%';
+}
+function flip() { if (!queue.length) return; flipped = !flipped; render(); }
+function know() { if (!queue.length) return; queue.shift(); show(); }
+function redo() {
+  if (!queue.length) return;
+  const c = queue.shift(); again++;
+  // put it back a few cards later (or at the end of a short queue)
+  queue.splice(Math.min(queue.length, 3), 0, c); show();
+}
+$('flash').onclick = flip; $('know').onclick = know; $('again').onclick = redo; $('restart').onclick = start;
+addEventListener('keydown', e => {
+  const onControl = e.target.closest('a, button');   // let focused controls handle Space/Enter natively
+  if ((e.key === ' ' || e.key === 'Enter') && !onControl) { e.preventDefault(); flip(); }
+  else if (e.key === 'ArrowRight') know();
+  else if (e.key === 'ArrowLeft') redo();
+});
+
+async function load() {
+  $('edit').href = './' + location.hash;
+  try {
+    if (location.hash.length < 3) throw new Error('empty');
+    deck = await decodeDeck(location.hash.slice(1));
+    if (!deck.cards.length) throw new Error('empty');
+  } catch {
+    $('err').hidden = false; $('study').hidden = true; $('done').hidden = true;
+    $('err').innerHTML = 'No readable deck in this link. <a href="./">Make one</a>.';
+    return;
+  }
+  $('err').hidden = true;
+  $('title').textContent = deck.title || 'Flashcards';
+  document.title = (deck.title || 'Flashcards') + ' – Study';
+  start();
+}
+addEventListener('hashchange', load);
+load();
+</script>
+</body>
+</html>

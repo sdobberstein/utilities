@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flashcard maker</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .cardrow { display: grid; grid-template-columns: 1.5em 1fr 1fr auto; gap: 8px; align-items: start; margin-bottom: 8px; }
+  .cardrow .n { color: var(--muted); padding-top: 10px; text-align: right; }
+  textarea { width: 100%; font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; min-height: 40px; }
+  @media (max-width: 600px) { .cardrow { grid-template-columns: 1fr 1fr; } .cardrow .n { display: none; } .cardrow button { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../">← Utilities</a></div>
+  <h1>Flashcard maker</h1>
+  <p class="muted">Enter both sides of each card, then generate a link. Whoever opens it gets the deck shuffled in a study view. Nothing is stored on a server.</p>
+
+  <div class="card">
+    <label>Deck title (optional)<br><input type="text" id="title" maxlength="80" style="width:100%;max-width:360px"></label>
+  </div>
+
+  <div class="card">
+    <div class="row between" style="margin-bottom:8px"><h3 style="margin:0">Cards <span class="muted" id="count"></span></h3>
+      <button id="add">+ Add card</button></div>
+    <div class="cardrow muted"><span></span><span>Front</span><span>Back</span><span></span></div>
+    <div id="rows"></div>
+  </div>
+
+  <details class="card">
+    <summary>Bulk import</summary>
+    <p class="muted">One card per line, front and back separated by a tab (paste from a spreadsheet) or <code>|</code>. Imported cards are added to the list above.</p>
+    <textarea id="bulk" rows="6" placeholder="hola | hello&#10;gracias | thank you"></textarea>
+    <div class="row" style="margin-top:8px"><button id="import">Import</button></div>
+  </details>
+
+  <div class="card">
+    <button class="primary" id="gen">Generate link</button>
+    <span class="muted" id="status"></span>
+    <div id="out" hidden style="margin-top:10px">
+      <input type="text" id="link" readonly style="width:100%">
+      <div class="row" style="margin-top:8px">
+        <button id="copy">Copy</button>
+        <a href="#" id="open" target="_blank" rel="noopener">Study →</a>
+        <span class="muted" id="note"></span>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="codec.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const rows = $('rows');
+
+function addRow(front = '', back = '', focus) {
+  const r = document.createElement('div'); r.className = 'cardrow';
+  r.innerHTML = '<span class="n"></span><textarea rows="1" aria-label="Front"></textarea><textarea rows="1" aria-label="Back"></textarea><button class="danger" title="Remove card" aria-label="Remove card">✕</button>';
+  const [f, b] = r.querySelectorAll('textarea'); f.value = front; b.value = back;
+  r.querySelector('button').onclick = () => { r.remove(); renumber(); };
+  rows.append(r); renumber();
+  if (focus) f.focus();
+}
+function renumber() {
+  [...rows.children].forEach((r, i) => r.querySelector('.n').textContent = i + 1);
+  $('count').textContent = '(' + rows.children.length + ')';
+}
+function cards() {
+  return [...rows.children].map(r => [...r.querySelectorAll('textarea')].map(t => t.value.trim()))
+    .filter(([f, b]) => f || b);
+}
+
+$('add').onclick = () => addRow('', '', true);
+$('import').onclick = () => {
+  let n = 0;
+  for (const line of $('bulk').value.split('\n')) {
+    if (!line.trim()) continue;
+    const i = line.includes('\t') ? line.indexOf('\t') : line.indexOf('|');
+    if (i < 0) continue;
+    addRow(line.slice(0, i).trim(), line.slice(i + 1).trim()); n++;
+  }
+  if (n) { $('bulk').value = ''; dropBlank(); }
+};
+function dropBlank() { [...rows.children].forEach(r => { if (![...r.querySelectorAll('textarea')].some(t => t.value)) r.remove(); }); renumber(); }
+
+$('gen').onclick = async () => {
+  const list = cards();
+  if (!list.length) { $('status').textContent = ' Add at least one card.'; return; }
+  $('status').textContent = '';
+  const url = new URL('view.html', location.href);
+  url.hash = await encodeDeck({ title: $('title').value.trim(), cards: list });
+  $('link').value = url.href; $('open').href = url.href;
+  $('note').textContent = list.length + ' cards, ' + url.href.length.toLocaleString() + ' characters' + (url.href.length > 8000 ? ' — long; some apps may truncate it' : '');
+  $('out').hidden = false;
+};
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('link').value); $('copy').textContent = 'Copied!'; }
+  catch { $('link').select(); }
+  setTimeout(() => $('copy').textContent = 'Copy', 1500);
+};
+
+(async () => {
+  if (location.hash.length > 2) {
+    try {
+      const d = await decodeDeck(location.hash.slice(1));
+      $('title').value = d.title; d.cards.forEach(([f, b]) => addRow(f, b));
+    } catch {}
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  if (!rows.children.length) for (let i = 0; i < 3; i++) addRow();
+})();
+</script>
+</body>
+</html>
