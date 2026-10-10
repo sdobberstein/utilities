@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  main { max-width: 800px; }
+  #doc { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px 20px; overflow-wrap: anywhere; }
+  #doc pre { background: var(--bg); padding: 10px; border-radius: 6px; overflow: auto; }
+  #doc code { background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+  #doc pre code { padding: 0; }
+  #doc blockquote { margin-left: 0; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
+  #doc img { max-width: 100%; }
+  #doc table { margin: 8px 0; } #doc th, #doc td { border: 1px solid var(--line); }
+  @media print { #doc { border: 0; padding: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="row between noprint">
+    <a href="./" id="edit">Edit a copy</a>
+    <span class="muted"><a href="../">Utilities</a></span>
+  </div>
+  <div id="doc"></div>
+</main>
+<script src="../assets/vendor/marked.min.js"></script>
+<script src="../assets/vendor/purify.min.js"></script>
+<script src="share.js"></script>
+<script>
+async function show() {
+  const frag = location.hash.slice(1), doc = document.getElementById('doc');
+  document.getElementById('edit').href = './' + location.hash;
+  if (!frag) { doc.innerHTML = '<p class="muted">Nothing to show. Create a link from the <a href="./">editor</a>.</p>'; return; }
+  try {
+    const text = await decodeMarkdown(frag);
+    doc.innerHTML = DOMPurify.sanitize(marked.parse(text, { gfm: true }));
+    doc.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+    const h = doc.querySelector('h1, h2, h3');
+    document.title = h ? h.textContent : 'Markdown';
+  } catch (e) {
+    doc.innerHTML = '<p class="bad">This link could not be read. It may be truncated or corrupted.</p>';
+  }
+}
+addEventListener('hashchange', show);
+show();
+</script>
+</body>
+</html>

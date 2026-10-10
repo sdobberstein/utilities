@@ -13,3 +13,4 @@ Create a folder with an `index.html` (use `../assets/style.css`) and add a card 
 
 ## Tools
 - `timer/` — countdown timer. `timer/view.html#<ISO UTC date>[&title=Text]` shows the countdown; `timer/` builds the link.
+- `markdown/` — client-side markdown editor with live preview (autosaves to localStorage). Uses vendored `marked` + `DOMPurify` in `assets/vendor/`.
