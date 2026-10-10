@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Countdown</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+  main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; max-width: 1000px; }
+  #title { font-size: clamp(1.2rem, 4vw, 2rem); margin-bottom: 12px; }
+  #clock { font-size: clamp(2.2rem, 11vw, 8rem); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  #clock.expired { color: var(--bad); }
+  #target { margin-top: 16px; }
+  footer { padding: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <div id="title"></div>
+  <div id="clock">…</div>
+  <div id="target" class="muted"></div>
+</main>
+<footer class="muted"><a href="./">Make your own timer</a></footer>
+<script>
+const $ = id => document.getElementById(id);
+let target = null, timer = null;
+
+function parse() {
+  const [date, ...rest] = location.hash.slice(1).split('&');
+  const params = new URLSearchParams(rest.join('&'));
+  const t = new Date(decodeURIComponent(date));
+  const title = params.get('title') || '';
+  document.title = title ? title + ' – Countdown' : 'Countdown';
+  $('title').textContent = title;
+  if (isNaN(t)) { target = null; return; }
+  target = t;
+  $('target').textContent = t.toLocaleString([], { dateStyle: 'full', timeStyle: 'short' });
+}
+
+function tick() {
+  const clock = $('clock');
+  if (!target) { clock.textContent = 'Invalid or missing date'; clock.className = 'expired'; clock.style.fontSize = '2rem'; clearInterval(timer); return; }
+  let s = Math.ceil((target - Date.now()) / 1000);
+  if (s <= 0) { clock.textContent = 'Expired'; clock.className = 'expired'; clearInterval(timer); return; }
+  clock.className = ''; clock.style.fontSize = '';
+  const days = Math.floor(s / 86400); s %= 86400;
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+  const p = n => String(n).padStart(2, '0');
+  clock.textContent = (days ? days + 'd ' : '') + `${p(h)}:${p(m)}:${p(sec)}`;
+}
+
+function start() { clearInterval(timer); parse(); tick(); timer = setInterval(tick, 250); }
+addEventListener('hashchange', start);
+start();
+</script>
+</body>
+</html>

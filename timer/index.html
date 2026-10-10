@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Countdown timer</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../">← Utilities</a></div>
+  <h1>Countdown timer</h1>
+  <p class="muted">Choose when the timer should go off, then share the link.</p>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <label>Date &amp; time (your local time)<br><input type="datetime-local" id="when"></label>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <label>Title (optional)<br><input type="text" id="title" placeholder="Launch day" maxlength="80" style="width:100%;max-width:320px"></label>
+    </div>
+    <button class="primary" id="gen">Generate link</button>
+  </div>
+  <div class="card" id="out" hidden>
+    <input type="text" id="link" readonly style="width:100%">
+    <div class="row" style="margin-top:8px">
+      <button id="copy">Copy</button>
+      <a href="#" id="open">Open timer →</a>
+    </div>
+    <p class="muted" id="note"></p>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+// default: tomorrow, same hour (local)
+const d = new Date(Date.now() + 864e5); d.setMinutes(0, 0, 0);
+$('when').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+$('gen').onclick = () => {
+  const t = new Date($('when').value);   // parsed as local time
+  if (isNaN(t)) { $('when').focus(); return; }
+  const iso = t.toISOString().replace('.000Z', 'Z');
+  let frag = iso;
+  const title = $('title').value.trim();
+  if (title) frag += '&title=' + encodeURIComponent(title);
+  const url = new URL('view.html', location.href);
+  url.hash = frag;
+  $('link').value = url.href;
+  $('open').href = url.href;
+  $('note').textContent = 'Shows the same moment in every timezone (' + iso + ').';
+  $('out').hidden = false;
+};
+$('copy').onclick = async () => {
+  $('link').select();
+  try { await navigator.clipboard.writeText($('link').value); $('copy').textContent = 'Copied!'; }
+  catch { document.execCommand('copy'); }
+  setTimeout(() => $('copy').textContent = 'Copy', 1500);
+};
+</script>
+</body>
+</html>
