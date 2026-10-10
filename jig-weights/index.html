@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jig weight conversions</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+  .tables { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  @media (max-width: 600px) { .tables { grid-template-columns: 1fr; } }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .conv input { width: 7em; }
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="../">← Utilities</a></div>
+  <h1>Jig weight conversions</h1>
+  <p class="muted">Ounces ↔ grams for common jig sizes. 1 oz = 28.35 g.</p>
+
+  <div class="card conv row">
+    <label>Ounces <input type="number" id="oz" step="any" min="0" inputmode="decimal"></label>
+    <span>=</span>
+    <label>Grams <input type="number" id="g" step="any" min="0" inputmode="decimal"></label>
+  </div>
+
+  <div class="tables">
+    <div class="card">
+      <h3>Ounces → grams</h3>
+      <table id="oztab"><thead><tr><th>oz</th><th class="num">g</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h3>Grams → ounces</h3>
+      <table id="gtab"><thead><tr><th>g</th><th class="num">oz</th><th class="num">nearest fraction</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</main>
+<script>
+const G_PER_OZ = 28.349523125;
+const $ = id => document.getElementById(id);
+const fmt = (n, d) => (+n.toFixed(d)).toString();
+
+const OZ = [[1/32,'1/32'],[1/16,'1/16'],[3/32,'3/32'],[1/8,'1/8'],[3/16,'3/16'],[1/4,'1/4'],[5/16,'5/16'],[3/8,'3/8'],[1/2,'1/2'],[5/8,'5/8'],[3/4,'3/4'],[7/8,'7/8'],
+  [1,'1'],[1.25,'1 1/4'],[1.5,'1 1/2'],[2,'2'],[2.5,'2 1/2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[8,'8']];
+$('oztab').tBodies[0].innerHTML = OZ.map(([v, l]) => `<tr><td>${l}</td><td class="num">${fmt(v * G_PER_OZ, 1)}</td></tr>`).join('');
+
+// nearest 1/16 oz (1/32 under 1/8 oz), shown as a mixed fraction
+function nearest(oz) {
+  const den = oz < 0.125 ? 32 : 16, n = Math.round(oz * den);
+  if (!n) return '–';
+  const whole = Math.floor(n / den); let num = n % den, d = den;
+  while (num && num % 2 === 0) { num /= 2; d /= 2; }
+  return [whole || '', num ? `${num}/${d}` : ''].filter(Boolean).join(' ');
+}
+const GRAMS = [3.5,5,7,10,14,15,20,21,28,30,35,40,45,50,60,80,100,120,150,200,250,300];
+$('gtab').tBodies[0].innerHTML = GRAMS.map(g => `<tr><td>${g}</td><td class="num">${fmt(g / G_PER_OZ, 2)}</td><td class="num">${nearest(g / G_PER_OZ)}</td></tr>`).join('');
+
+$('oz').oninput = () => { const v = parseFloat($('oz').value); $('g').value = isNaN(v) ? '' : fmt(v * G_PER_OZ, 2); };
+$('g').oninput = () => { const v = parseFloat($('g').value); $('oz').value = isNaN(v) ? '' : fmt(v / G_PER_OZ, 3); };
+</script>
+</body>
+</html>

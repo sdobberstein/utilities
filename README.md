@@ -15,3 +15,4 @@ Create a folder with an `index.html` (use `../assets/style.css`) and add a card 
 - `timer/` — countdown timer. `timer/view.html#<ISO UTC date>[&title=Text]` shows the countdown; `timer/` builds the link.
 - `markdown/` — client-side markdown editor with live preview (autosaves to localStorage). Uses vendored `marked` + `DOMPurify` in `assets/vendor/`.
 - `encrypt/` — password-encrypted message in a link (PBKDF2-SHA256 600k iterations + AES-256-GCM via WebCrypto, all client-side). `encrypt/view.html#<data>` prompts for the password.
+- `jig-weights/` — oz ↔ g reference tables for common jig sizes, plus a live converter.
