@@ -24,6 +24,7 @@
     <div class="row" style="margin-top:8px">
       <button id="copy">Copy</button>
       <a href="#" id="open" target="_blank" rel="noopener">Open →</a>
+      <a href="#" id="qr" target="_blank" rel="noopener">Make QR code →</a>
       <span class="muted" id="note"></span>
     </div>
   </div>
@@ -41,6 +42,7 @@ $('go').onclick = async () => {
     const url = new URL('view.html', location.href);
     url.hash = await encryptText($('msg').value, $('pw').value);
     $('link').value = url.href; $('open').href = url.href;
+    $('qr').href = '../qr/#' + encodeURIComponent(url.href);
     $('note').textContent = url.href.length.toLocaleString() + ' characters' + (url.href.length > 8000 ? ' — long; some apps may truncate it' : '');
     $('out').hidden = false; $('status').textContent = '';
   } catch (e) { $('status').textContent = ' Failed: ' + e.message; }

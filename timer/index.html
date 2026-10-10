@@ -25,6 +25,7 @@
     <div class="row" style="margin-top:8px">
       <button id="copy">Copy</button>
       <a href="#" id="open">Open timer →</a>
+      <a href="#" id="qr" target="_blank" rel="noopener">Make QR code →</a>
     </div>
     <p class="muted" id="note"></p>
   </div>
@@ -47,6 +48,7 @@ $('gen').onclick = () => {
   url.hash = frag;
   $('link').value = url.href;
   $('open').href = url.href;
+  $('qr').href = '../qr/#' + encodeURIComponent(url.href);
   $('note').textContent = 'Shows the same moment in every timezone (' + iso + ').';
   $('out').hidden = false;
 };
